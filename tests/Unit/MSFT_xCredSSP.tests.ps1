@@ -1,17 +1,5 @@
-<#
-.Synopsis
-   Unit tests for MSFT_xCredSSP
-.DESCRIPTION
-   Unit tests for MSFT_xCredSSP
-
-.NOTES
-   Code in HEADER and FOOTER regions are standard and may be moved into DSCResource.Tools in
-   Future and therefore should not be altered if possible.
-#>
-
-
-$Global:DSCModuleName      = 'xCredSSP' # Example xNetworking
-$Global:DSCResourceName    = 'MSFT_xCredSSP' # Example MSFT_xFirewall
+$script:dscModuleName      = 'xCredSSP'
+$script:dscResourceName    = 'MSFT_xCredSSP'
 
 #region HEADER
 [String] $moduleRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $Script:MyInvocation.MyCommand.Path))
@@ -31,44 +19,28 @@ $TestEnvironment = Initialize-TestEnvironment `
     -TestType Unit
 #endregion
 
-# TODO: Other Optional Init Code Goes Here...
-
-# Begin Testing
 try
 {
-    #region Pester Tests
-
-    # The InModuleScope command allows you to perform white-box unit testing on the internal
-    # (non-exported) code of a Script Module.
-    InModuleScope $Global:DSCResourceName {
-
-        #region Pester Test Initialization
-        # TODO: Optopnal Load Mock for use in Pester tests here...
-        #endregion
-
-
-        #region Function Get-TargetResource
-        Describe "$($Global:DSCResourceName)\Get-TargetResource" {
+    InModuleScope $script :DSCResourceName {
+        Describe 'MSFT_xCredSSP\Get-TargetResource' {
             # TODO: Complete Tests...
         }
-        #endregion
 
-
-        #region Function Test-TargetResource
         Describe "$($Global:DSCResourceName)\Test-TargetResource" {
             Context "Enable Server Role with invalid delegate Computer parameter" {
                 BeforeAll {
                     $global:DSCMachineStatus = $null
                 }
+
                 AfterAll {
                     $global:DSCMachineStatus = $null
                 }
 
-                mock Enable-WSManCredSSP -MockWith {} -Verifiable
-                mock Disable-WSManCredSSP -MockWith {}
+                Mock -CommandName Enable-WSManCredSSP
+                Mock -CommandName Disable-WSManCredSSP
 
                 It 'Should return $false' {
-                    Test-TargetResource -Ensure 'Present' -Role Server -DelegateComputer 'foo' | Should Be $false
+                    Test-TargetResource -Ensure 'Present' -Role Server -DelegateComputer 'foo' | Should -BeFalse
                 }
             }
 
@@ -76,15 +48,17 @@ try
                 BeforeAll {
                     $global:DSCMachineStatus = $null
                 }
+
                 AfterAll {
                     $global:DSCMachineStatus = $null
                 }
 
-                mock Get-ItemProperty -MockWith {
+                Mock -CommandName Get-ItemProperty -MockWith {
                     return @{ auth_credssp = 0 }
                 }
-                it 'Should return $false' {
-                    Test-TargetResource -Ensure 'Present' -Role Server | should be $false
+
+                It 'Should return $false' {
+                    Test-TargetResource -Ensure 'Present' -Role Server | should -BeFalse
                 }
             }
 
@@ -92,18 +66,26 @@ try
                 BeforeAll {
                     $global:DSCMachineStatus = $null
                 }
+
                 AfterAll {
                     $global:DSCMachineStatus = $null
                 }
 
-                Mock Get-WSManCredSSP -MockWith {@([string]::Empty,[string]::Empty)}
-                mock Get-ItemProperty -MockWith {
+                Mock -CommandName Get-WSManCredSSP -MockWith {
+                    return @(
+                        [string]::Empty,
+                        [string]::Empty
+                    )
+                }
+
+                Mock -CommandName Get-ItemProperty -MockWith {
                     return @{
                         1 = "wsman/testserver.domain.com"
                         2 = "wsman/testserver2.domain.com"
                     }
                 }
-                mock Get-Item -MockWith {
+
+                Mock -CommandName Get-Item -MockWith {
                     $client1 = New-Object -typename PSObject|
                                 Add-Member NoteProperty "Name" 1 -PassThru |
                                 Add-Member NoteProperty "Property" 1 -PassThru
@@ -112,42 +94,45 @@ try
                                 Add-Member NoteProperty "Name" 2 -PassThru |
                                 Add-Member NoteProperty "Property" 2 -PassThru
 
-                    return @($client1, $client2)
+                    return @(
+                        $client1,
+                        $client2
+                    )
                 }
 
-                it 'Should return $false' {
-                    Test-TargetResource -Ensure 'Present' -Role Client -DelegateComputer 'foo' | should be $false
+                It 'Should return $false' {
+                    Test-TargetResource -Ensure 'Present' -Role Client -DelegateComputer 'foo' | Should -BeFalse
                 }
             }
         }
-        #endregion
 
-
-        #region Function Set-TargetResource
-        Describe "$($Global:DSCResourceName)\Set-TargetResource" {
-
+        Describe 'MSFT_xCredSSP\Set-TargetResource' {
             Context "Enable Server Role with invalid delegate Computer parameter" {
                 BeforeAll {
                     $global:DSCMachineStatus = $null
                 }
+
                 AfterAll {
                     $global:DSCMachineStatus = $null
                 }
 
-                mock Enable-WSManCredSSP -MockWith {} -Verifiable
-                mock Disable-WSManCredSSP -MockWith {}
+                Mock -CommandName Enable-WSManCredSSP
+                Mock -CommandName Disable-WSManCredSSP
 
-                it 'should throw' {
-                    { Set-TargetResource -Ensure 'Present' -Role Server -DelegateComputer 'foo' } | should throw
+                It 'Should throw' {
+                    { Set-TargetResource -Ensure 'Present' -Role Server -DelegateComputer 'foo' } | Should -Throw
                 }
-                it 'should have not called enable' {
+
+                It 'Should have not called enable' {
                     Assert-MockCalled -CommandName Enable-WSManCredSSP -Times 0 -Scope 'Context'
                 }
-                it 'should have not called disable' {
+
+                It 'Should have not called disable' {
                     Assert-MockCalled -CommandName Disable-WSManCredSSP -Times 0 -Scope 'Context'
                 }
-                it 'Should not have triggered a reboot' {
-                    $global:DSCMachineStatus | should be $null
+
+                It 'Should not have triggered a reboot' {
+                    $global:DSCMachineStatus | Should -BeNullOrEmpty
                 }
             }
 
@@ -155,27 +140,36 @@ try
                 BeforeAll {
                     $global:DSCMachineStatus = $null
                 }
+
                 AfterAll {
                     $global:DSCMachineStatus = $null
                 }
 
-                mock Enable-WSManCredSSP -MockWith {} -Verifiable
-                mock Disable-WSManCredSSP -MockWith {}
-                mock Get-ItemProperty -MockWith {
-                    return @{ AllowCredSSP = 1 }
-                } -ParameterFilter { $Path -eq "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WinRM\Service" }
+                Mock -CommandName Enable-WSManCredSSP
+                Mock -CommandName Disable-WSManCredSSP
 
-                it 'should throw' {
-                    { Set-TargetResource -Ensure 'Present' -Role Server }| should throw
+                Mock -CommandName Get-ItemProperty -MockWith {
+                    return @{
+                        AllowCredSSP = 1
+                    }
+                } -ParameterFilter {
+                    $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WinRM\Service'
                 }
-                it 'should have not called enable' {
+
+                It 'Should throw' {
+                    { Set-TargetResource -Ensure 'Present' -Role Server } | Should -Throw
+                }
+
+                It 'Should have not called enable' {
                     Assert-MockCalled -CommandName Enable-WSManCredSSP -Times 0 -Scope 'Context'
                 }
-                it 'should have not called disable' {
+
+                It 'Should have not called disable' {
                     Assert-MockCalled -CommandName Disable-WSManCredSSP -Times 0 -Scope 'Context'
                 }
-                it 'Should not have triggered a reboot' {
-                    $global:DSCMachineStatus | should be $null
+
+                It 'Should not have triggered a reboot' {
+                    $global:DSCMachineStatus | Should -BeNullOrEmpty
                 }
             }
 
@@ -183,27 +177,36 @@ try
                 BeforeAll {
                     $global:DSCMachineStatus = $null
                 }
+
                 AfterAll {
                     $global:DSCMachineStatus = $null
                 }
 
-                mock Enable-WSManCredSSP -MockWith {} -Verifiable
-                mock Disable-WSManCredSSP -MockWith {}
-                mock Get-ItemProperty -MockWith {
-                    return @{ AllowCredSSP = 1 }
-                } -ParameterFilter { $Path -eq "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WinRM\Client" }
+                Mock -CommandName Enable-WSManCredSSP
+                Mock -CommandName Disable-WSManCredSSP
 
-                it 'should throw' {
-                    {Set-TargetResource -Ensure 'Present' -Role Client -DelegateComputers 'foo'}| should throw
+                mock Get-ItemProperty -MockWith {
+                    return @{
+                        AllowCredSSP = 1
+                    }
+                } -ParameterFilter {
+                    $Path -eq 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WinRM\Client'
                 }
-                it 'should have not called enable' {
+
+                It 'Should throw' {
+                    { Set-TargetResource -Ensure 'Present' -Role Client -DelegateComputers 'foo' } | Should -Throw
+                }
+
+                It 'Should have not called enable' {
                     Assert-MockCalled -CommandName Enable-WSManCredSSP -Times 0 -Scope 'Context'
                 }
-                it 'should have not called disable' {
+
+                It 'Should have not called disable' {
                     Assert-MockCalled -CommandName Disable-WSManCredSSP -Times 0 -Scope 'Context'
                 }
-                it 'Should not have triggered a reboot' {
-                    $global:DSCMachineStatus | should be $null
+
+                It 'Should not have triggered a reboot' {
+                    $global:DSCMachineStatus | Should -BeNullOrEmpty
                 }
             }
 
@@ -211,26 +214,34 @@ try
                 BeforeAll {
                     $global:DSCMachineStatus = $null
                 }
+
                 AfterAll {
                     $global:DSCMachineStatus = $null
                 }
 
-                mock Enable-WSManCredSSP -MockWith {} -Verifiable
-                mock Disable-WSManCredSSP -MockWith {}
-                mock Get-ItemProperty -MockWith {
+                Mock -CommandName Enable-WSManCredSSP
+                Mock -CommandName Disable-WSManCredSSP
+
+                Mock -CommandName Get-ItemProperty -MockWith {
                     return @{ auth_credssp = 1 }
                 }
-                it 'should not return anything' {
-                    Set-TargetResource -Ensure 'Present' -Role Server | should be $null
+
+                It 'Should not return anything' {
+                    Set-TargetResource -Ensure 'Present' -Role Server | Should -BeNullOrEmpty
                 }
-                it 'should have called enable'{
-                    Assert-MockCalled -CommandName Enable-WSManCredSSP -Times 1 -ParameterFilter {$Role -eq 'Server' -and $Force -eq $true}
+
+                It 'Should have called enable'{
+                    Assert-MockCalled -CommandName Enable-WSManCredSSP -Times 1 -ParameterFilter {
+                        $Role -eq 'Server' -and $Force -eq $true
+                    }
                 }
-                it 'should have not called disable' {
+
+                It 'Should have not called disable' {
                     Assert-MockCalled -CommandName Disable-WSManCredSSP -Times 0
                 }
-                it 'Should have triggered a reboot'{
-                    $global:DSCMachineStatus | should be 1
+
+                It 'Should have triggered a reboot'{
+                    $global:DSCMachineStatus | Should -Be 1
                 }
             }
 
@@ -238,20 +249,29 @@ try
                 BeforeAll {
                     $global:DSCMachineStatus = $null
                 }
+
                 AfterAll {
                     $global:DSCMachineStatus = $null
                 }
 
-                Mock Get-WSManCredSSP -MockWith {@([string]::Empty,[string]::Empty)}
-                mock Enable-WSManCredSSP -MockWith {} -Verifiable
-                mock Disable-WSManCredSSP -MockWith {}
-                mock Get-ItemProperty -MockWith {
+                Mock -CommandName Get-WSManCredSSP -MockWith {
+                    return @(
+                        [string]::Empty,
+                        [string]::Empty
+                    )
+                }
+
+                Mock -CommandName Enable-WSManCredSSP
+                Mock -CommandName Disable-WSManCredSSP
+
+                Mock -CommandName Get-ItemProperty -MockWith {
                     return @{
-                        1 = "wsman/testserver.domain.com"
-                        2 = "wsman/testserver2.domain.com"
+                        1 = 'wsman/testserver.domain.com'
+                        2 = 'wsman/testserver2.domain.com'
                     }
                 }
-                mock Get-Item -MockWith {
+
+                Mock -CommandName Get-Item -MockWith {
                     $client1 = New-Object -typename PSObject|
                                 Add-Member NoteProperty "Name" 1 -PassThru |
                                 Add-Member NoteProperty "Property" 1 -PassThru
@@ -260,78 +280,93 @@ try
                                 Add-Member NoteProperty "Name" 2 -PassThru |
                                 Add-Member NoteProperty "Property" 2 -PassThru
 
-                    return @($client1, $client2)
+                    return @(
+                        $client1,
+                        $client2
+                    )
                 }
 
-                it 'should not return anything' {
-                    Set-TargetResource -Ensure 'Present' -Role Client -DelegateComputer 'foo' | should be $null
+                It 'Should not return anything' {
+                    Set-TargetResource -Ensure 'Present' -Role Client -DelegateComputer 'foo' | Should -BeNullOrEmpty
                 }
-                it 'should have called enable'{
-                    Assert-MockCalled -CommandName Enable-WSManCredSSP -Times 1 -ParameterFilter {$Role -eq 'Client' -and $Force -eq $true -and $DelegateComputer -eq 'foo'}
+
+                It 'Should have called enable'{
+                    Assert-MockCalled -CommandName Enable-WSManCredSSP -Times 1 -ParameterFilter {
+                        $Role -eq 'Client' -and $Force -eq $true -and $DelegateComputer -eq 'foo'
+                    }
                 }
-                it 'should have not called disable' {
+
+                It 'Should have not called disable' {
                     Assert-MockCalled -CommandName Disable-WSManCredSSP -Times 0
                 }
-                it 'Should have triggered a reboot'{
-                    $global:DSCMachineStatus | should be 1
+
+                It 'Should have triggered a reboot'{
+                    $global:DSCMachineStatus | Should -Be 1
                 }
             }
+
             Context "Enable Client Role  with invalid delegate Computer parameter" {
                 BeforeAll {
                     $global:DSCMachineStatus = $null
                 }
+
                 AfterAll {
                     $global:DSCMachineStatus = $null
                 }
 
-                Mock Get-WSManCredSSP -MockWith {@([string]::Empty,[string]::Empty)}
-                mock Enable-WSManCredSSP -MockWith {} -Verifiable
-                mock Disable-WSManCredSSP -MockWith {}
-                mock Get-ItemProperty -MockWith {
-                    return @{ auth_credssp = 1 }
+                Mock -CommandName Get-WSManCredSSP -MockWith {
+                    @(
+                        [string]::Empty,
+                        [string]::Empty
+                    )
                 }
-                mock Get-Item -MockWith {
+
+                Mock -CommandName Enable-WSManCredSSP
+                Mock -CommandName Disable-WSManCredSSP
+
+                Mock -CommandName Get-ItemProperty -MockWith {
+                    return @{
+                        auth_credssp = 1
+                    }
+                }
+
+                Mock -CommandName Get-Item -MockWith {
                     return @(
                         @{
                             Name = 1
-                            Property = "wsman/foo"
+                            Property = 'wsman/foo'
                         },
                         @{
                             Name = 1
-                            Property = "wsman/testserver.domain.com"
+                            Property = 'wsman/testserver.domain.com'
                         }
                     )
                 }
 
-                it 'should throw' {
-                    { Set-TargetResource -Ensure 'Present' -Role Client } | should throw 'DelegateComputers is required!'
+                It 'Should throw' {
+                    { Set-TargetResource -Ensure 'Present' -Role Client } | Should -Throw 'DelegateComputers is required!'
                 }
-                it 'should have not called get' {
+
+                It 'Should have not called get' {
                     Assert-MockCalled -CommandName Get-WSManCredSSP -Times 0 -Scope 'Context'
                 }
-                it 'should have called enable' {
+
+                It 'Should have called enable' {
                     Assert-MockCalled -CommandName Enable-WSManCredSSP -Times 0 -Scope 'Context'
                 }
-                it 'should have not called disable' {
+
+                It 'Should have not called disable' {
                     Assert-MockCalled -CommandName Disable-WSManCredSSP -Times 0 -Scope 'Context'
                 }
-                it 'Should have triggered a reboot'{
-                    $global:DSCMachineStatus | should be $null
+
+                It 'Should not have triggered a reboot'{
+                    $global:DSCMachineStatus | Should -BeNullOrEmpty
                 }
             }
         }
-        #endregion
-
-        # TODO: Pester Tests for any Helper Cmdlets
-
     }
-    #endregion
 }
 finally
 {
-    #region FOOTER
     Restore-TestEnvironment -TestEnvironment $TestEnvironment
-    #endregion
-
-    # TODO: Other Optional Cleanup Code Goes Here...
 }
