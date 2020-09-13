@@ -15,7 +15,7 @@ CompanyName = 'Microsoft Corporation'
 Copyright = '(c) 2014 Microsoft Corporation. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Module with DSC Resources for WSMan CredSSP.'
+Description = 'This module contains DSC resources for configuration of the WSMan Credential Security Support Provider (CredSSP).'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '4.0'
@@ -55,6 +55,3 @@ PrivateData = @{
 
 } # End of PrivateData hashtable
 }
-
-
-
